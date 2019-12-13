@@ -13,7 +13,7 @@ from .datadog_client import DatadogClient
 
 DATADOG_CLIENT = DatadogClient()
 
-CONFIG_DIR = DATADOG_CLIENT.config_dir
+CONFIG_DIR = f"{DATADOG_CLIENT.home}/{DATADOG_CLIENT.config_dir}"
 
 ACCEPTABLE_TYPES = ["monitor", "dashboard"]
 FILES = [f"{type_}s" for type_ in ACCEPTABLE_TYPES]
@@ -24,7 +24,7 @@ class StorageLocation(Enum):
     """ Where the config should be saved to """
 
     s3 = "s3"
-    git = "git"
+    disk = "disk"
 
 
 def push_monitors(config, datadog_client):
@@ -72,9 +72,14 @@ def save_configs(configs: dict, location: str = "."):
 def get_all_config():
     dashboard_details = []
     click.echo("\nRetrieving dashboards: ")
+    all_dashboards = DATADOG_CLIENT.get_dashboards()
+    total = len(all_dashboards)
+    count = 1
     for dashboard in DATADOG_CLIENT.get_dashboards():
-        click.echo(f" - {dashboard['title']}")
+        percentage_done = round((count / total) * 100)
+        click.echo(f" - {dashboard['title']} - {percentage_done}%")
         dashboard_details.append(DATADOG_CLIENT.get_dashboard_detail(dashboard["id"]))
+        count += 1
 
     return {"monitors": DATADOG_CLIENT.get_monitors(), "dashboards": dashboard_details}
 
@@ -93,7 +98,10 @@ def get_local_config(location: str = "."):
 
 
 def _save(location):
-    click.echo(f"\n🐶 Saving datadog config to {location}... (this might take a while)")
+    save_loc = location
+    if location == ".":
+        save_loc = f"current directory ({os.getcwd()})"
+    click.echo(f"\n🐶 Saving datadog config to {save_loc}... (this might take a while)")
     all_config = get_all_config()
     save_configs(all_config, location)
     click.echo(f"\n✨ All done! ✨")
@@ -106,20 +114,20 @@ def main():
 
 @main.command()
 @click.argument("folder", default=CONFIG_DIR)
-@click.option("-l", "--location", default=StorageLocation.git.value)
+@click.option("-l", "--location", default=StorageLocation.disk.value)
 def save(folder, location):
     click.echo(f"---- Datadog -> {location} ---- ")
     if location == StorageLocation.s3.value:
         click.echo("Saving all config to S3 is not yet supported! :( ")
         return
-    elif location == StorageLocation.git.value:
+    elif location == StorageLocation.disk.value:
         _save(folder)
     else:
         click.echo(f"Unknown storage location: {location}")
 
 
 @main.command()
-@click.argument("folder", default="../config")
+@click.argument("folder", default=CONFIG_DIR)
 def diff(folder):
     click.echo("🐶 Generating diff of Datadog Config from local -> remote ...")
     remote_config = get_all_config()
