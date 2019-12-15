@@ -16,6 +16,7 @@ DATADOG_CLIENT = DatadogClient()
 CONFIG_DIR = f"{DATADOG_CLIENT.home}/{DATADOG_CLIENT.config_dir}"
 
 ACCEPTABLE_TYPES = ["monitor", "dashboard"]
+PLURAL_ACCEPTABLE_TYPES = ["monitors", "dashboards"]
 FILES = [f"{type_}s" for type_ in ACCEPTABLE_TYPES]
 PUSH_CONFIG: Dict[str, Callable] = {k: lambda x: x for k in FILES}
 
@@ -157,15 +158,16 @@ def configure(api_key, app_key):
 @main.command()
 @click.argument("config_type", type=str)
 def list(config_type):  # noqa
-    if config_type not in ACCEPTABLE_TYPES:
-        click.echo(f"list <config_type> must be one of {','.join(ACCEPTABLE_TYPES)}")
+    if config_type not in PLURAL_ACCEPTABLE_TYPES:
+        click.echo(f"list <config_type> must be one of {','.join(PLURAL_ACCEPTABLE_TYPES)}")
         return
-    if config_type == "monitor":
+    if config_type == "monitors":
         objs = DATADOG_CLIENT.get_monitors()
-
-    if config_type == "dashboard":
+    elif config_type == "dashboards":
         objs = DATADOG_CLIENT.get_dashboards()
-    click.echo(f"\nListing {config_type}s: ")
+    else:
+        return
+    click.echo(f"\nListing {config_type}: ")
     for obj in objs:
         click.echo(f" - {obj.get('title', obj.get('name'))}")
 

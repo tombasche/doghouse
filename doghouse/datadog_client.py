@@ -67,9 +67,10 @@ class DatadogClient:
                     f"Have your credentials been set in {self.default_config_file}?"
                 )
         else:
+            to_return = objs
             if key:
-                return objs[key]
-            return objs
+                to_return = objs[key]
+            return sorted(to_return, key=lambda x: x.get('title', x.get('name')))
         return []
 
     def get_dashboards(self) -> list:
