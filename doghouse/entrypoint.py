@@ -3,13 +3,13 @@ import json
 import os
 
 from enum import Enum
-from typing import Dict, Callable
+from typing import Dict, Callable, Any
 
 import click
 from click import Choice
 from datadiff import diff as dict_diff
 
-from .datadog_client import DatadogClient
+from doghouse.datadog_client import DatadogClient
 
 DATADOG_CLIENT = DatadogClient()
 
@@ -69,7 +69,7 @@ def save_configs(configs: dict, location: str = "."):
             config_file.write(json.dumps(api_response, indent=2).encode("utf-8"))
 
 
-def get_all_config():
+def get_all_config() -> Dict[str, Any]:
     dashboard_details = []
     click.echo("\nRetrieving dashboards: ")
     all_dashboards = DATADOG_CLIENT.get_dashboards()
@@ -84,7 +84,7 @@ def get_all_config():
     return {"monitors": DATADOG_CLIENT.get_monitors(), "dashboards": dashboard_details}
 
 
-def get_local_config(location: str = "."):
+def get_local_config(location: str = ".") -> dict:
     local_config = {file_: None for file_ in FILES}
 
     for file_ in FILES:
@@ -97,7 +97,7 @@ def get_local_config(location: str = "."):
     return local_config
 
 
-def _save(location):
+def _save(location: str):
     save_loc = location
     if location == ".":
         save_loc = f"current directory ({os.getcwd()})"
@@ -141,6 +141,17 @@ def diff(folder):
         click.echo("No difference - nothing to do!")
         return
     click.echo(result)
+
+
+@main.command()
+@click.option(
+    "--api-key", default="", help="Datadog api key",
+)
+@click.option(
+    "--app-key", default="", help="Datadog app key",
+)
+def configure(api_key, app_key):
+    DATADOG_CLIENT.configure(api_key, app_key)
 
 
 @main.command()

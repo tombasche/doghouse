@@ -38,10 +38,12 @@ class DatadogClient:
                 )
                 raise ex
 
-    def _create_config_file(self) -> dict:
+    def _create_config_file(self, api_key=None, app_key=None) -> dict:
         """ Create the config file from user input if it doesn't already exist."""
-        api_key = input("Please enter your API Key: ")
-        app_key = input("Please enter your APP Key: ")
+        if not api_key:
+            api_key = input("Please enter your API Key: ")
+        if not app_key:
+            app_key = input("Please enter your APP Key: ")
         config = {"api_key": api_key, "app_key": app_key}
         with open(self.default_config_file, "w+") as new_config:
             yaml.dump(config, new_config, default_flow_style=False)
@@ -62,3 +64,6 @@ class DatadogClient:
 
     def update_monitor(self, monitor_id, **kwargs):
         return api.Monitor.update(monitor_id, **kwargs)
+
+    def configure(self, api_key, app_key):
+        self._create_config_file(api_key, app_key)
