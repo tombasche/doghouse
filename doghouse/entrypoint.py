@@ -155,6 +155,22 @@ def configure(api_key, app_key):
 
 
 @main.command()
+@click.argument("config_type", type=str)
+def list(config_type):
+    if config_type not in ACCEPTABLE_TYPES:
+        click.echo(f"list <config_type> must be one of {','.join(ACCEPTABLE_TYPES)}")
+        return
+    if config_type == "monitor":
+        objs = DATADOG_CLIENT.get_monitors()
+
+    if config_type == "dashboard":
+        objs = DATADOG_CLIENT.get_dashboards()
+    click.echo(f"\nListing {config_type}s: ")
+    for obj in objs:
+        click.echo(f" - {obj.get('title', obj.get('name'))}")
+
+
+@main.command()
 @click.option(
     "-c", "--config", default="", help="Sync a single config file up to Datadog"
 )
@@ -177,43 +193,6 @@ def sync(config, location):
         click.echo(f"✨\n All done! ✨")
     else:
         click.echo("✨\n Not pushing any changes today! ✨")
-
-
-def save_object(id_, config_dir: str = CONFIG_DIR, type_: str = "dashboard"):
-    obj = getattr(DATADOG_CLIENT, f"get_{type_}_detail")(id_)
-    if obj.get("errors"):
-        click.echo(f"😥 {obj['errors']}: {id_}")
-        return
-    local_config = get_local_config(config_dir)[f"{type_}s"]
-    to_write = []
-    overwritten = False
-    for existing_obj in local_config:
-        if existing_obj["id"] == id_:
-            if (
-                click.prompt(
-                    f"This {type_} already exists in the master file - overwrite? y/n",
-                    type=Choice(["y", "n"]),
-                )
-                == "y"
-            ):
-                to_write.append(obj)
-                overwritten = True
-            else:
-                continue
-        else:
-            to_write.append(existing_obj)
-    if not overwritten:
-        to_write.append(obj)
-    config = {f"{type_}s": to_write}
-    save_configs(config, config_dir)
-
-
-def save_dashboard(dashboard_id, config_dir: str = CONFIG_DIR):
-    save_object(dashboard_id, config_dir, "dashboard")
-
-
-def save_monitor(monitor_id, config_dir: str = CONFIG_DIR):
-    save_object(monitor_id, config_dir, "monitor")
 
 
 if __name__ == "__main__":

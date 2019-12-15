@@ -9,6 +9,8 @@ from typing import Optional
 import yaml
 from datadog import initialize, api
 
+from doghouse.exceptions import RequestForbiddenError
+
 MAX_RETRY = 10
 
 
@@ -50,20 +52,33 @@ class DatadogClient:
         print(f"💾 Created config file at {self.default_config_file}")
         return config
 
-    def get_dashboards(self):
-        return api.Dashboard.get_all()["dashboards"]
+    def __make_api_request(self, resource, method, key, *args, **kwargs):
+        try:
+            objs = getattr(getattr(api, resource), method)(*args, **kwargs)
+        except Exception as ex:
+            str_resp = ex.args[0]
+            if '403 Forbidden' in str_resp:
+                raise RequestForbiddenError(f"Have your credentials been set in {self.default_config_file}?")
+        else:
+            if key:
+                return objs[key]
+            return objs
+        return []
+
+    def get_dashboards(self) -> list:
+        return self.__make_api_request('Dashboard', 'get_all', 'dashboards')
 
     def get_dashboard_detail(self, dashboard_id):
-        return api.Dashboard.get(dashboard_id)
+        return self.__make_api_request('Dashboard', 'get', None, dashboard_id)
 
     def update_dashboard(self, dashboard_id, **kwargs):
-        return api.Dashboard.update(dashboard_id, **kwargs)
+        return self.__make_api_request('Dashboard', 'update', None, dashboard_id, **kwargs)
 
     def get_monitors(self):
-        return api.Monitor.get_all()
+        return self.__make_api_request('Monitor', 'get_all', None)
 
     def update_monitor(self, monitor_id, **kwargs):
-        return api.Monitor.update(monitor_id, **kwargs)
+        return self.__make_api_request('Monitor', 'update', None, monitor_id, **kwargs)
 
     def configure(self, api_key, app_key):
         self._create_config_file(api_key, app_key)
