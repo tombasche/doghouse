@@ -53,12 +53,19 @@ class DatadogClient:
         return config
 
     def __make_api_request(self, resource, method, key, *args, **kwargs):
+        """
+        Make a request to the Datadog api.
+        Raises:
+            RequestForbiddenError
+        """
         try:
             objs = getattr(getattr(api, resource), method)(*args, **kwargs)
         except Exception as ex:
             str_resp = ex.args[0]
-            if '403 Forbidden' in str_resp:
-                raise RequestForbiddenError(f"Have your credentials been set in {self.default_config_file}?")
+            if "403 Forbidden" in str_resp:
+                raise RequestForbiddenError(
+                    f"Have your credentials been set in {self.default_config_file}?"
+                )
         else:
             if key:
                 return objs[key]
@@ -66,19 +73,21 @@ class DatadogClient:
         return []
 
     def get_dashboards(self) -> list:
-        return self.__make_api_request('Dashboard', 'get_all', 'dashboards')
+        return self.__make_api_request("Dashboard", "get_all", "dashboards")
 
     def get_dashboard_detail(self, dashboard_id):
-        return self.__make_api_request('Dashboard', 'get', None, dashboard_id)
+        return self.__make_api_request("Dashboard", "get", None, dashboard_id)
 
     def update_dashboard(self, dashboard_id, **kwargs):
-        return self.__make_api_request('Dashboard', 'update', None, dashboard_id, **kwargs)
+        return self.__make_api_request(
+            "Dashboard", "update", None, dashboard_id, **kwargs
+        )
 
     def get_monitors(self):
-        return self.__make_api_request('Monitor', 'get_all', None)
+        return self.__make_api_request("Monitor", "get_all", None)
 
     def update_monitor(self, monitor_id, **kwargs):
-        return self.__make_api_request('Monitor', 'update', None, monitor_id, **kwargs)
+        return self.__make_api_request("Monitor", "update", None, monitor_id, **kwargs)
 
     def configure(self, api_key, app_key):
         self._create_config_file(api_key, app_key)

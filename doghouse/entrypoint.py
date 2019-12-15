@@ -156,7 +156,7 @@ def configure(api_key, app_key):
 
 @main.command()
 @click.argument("config_type", type=str)
-def list(config_type):
+def list(config_type):  # noqa
     if config_type not in ACCEPTABLE_TYPES:
         click.echo(f"list <config_type> must be one of {','.join(ACCEPTABLE_TYPES)}")
         return
