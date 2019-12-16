@@ -9,14 +9,14 @@ import click
 from click import Choice
 from datadiff import diff as dict_diff
 
-from doghouse.datadog_client import DatadogClient
+from doghouse.datadog_client import DatadogClient, DATADOG_OBJECTS
 
 DATADOG_CLIENT = DatadogClient()
 
 CONFIG_DIR = f"{DATADOG_CLIENT.home}/{DATADOG_CLIENT.config_dir}"
 
-ACCEPTABLE_TYPES = ["monitor", "dashboard"]
-PLURAL_ACCEPTABLE_TYPES = ["monitors", "dashboards"]
+ACCEPTABLE_TYPES = [obj.name for obj in DATADOG_OBJECTS.values()]
+PLURAL_ACCEPTABLE_TYPES = [obj.key for obj in DATADOG_OBJECTS.values()]
 FILES = [f"{type_}s" for type_ in ACCEPTABLE_TYPES]
 PUSH_CONFIG: Dict[str, Callable] = {k: lambda x: x for k in FILES}
 
@@ -156,18 +156,16 @@ def configure(api_key, app_key):
 
 
 @main.command()
-@click.argument("config_type", type=str)
+@click.argument("config_type")
 def list(config_type):  # noqa
     if config_type not in PLURAL_ACCEPTABLE_TYPES:
-        click.echo(f"list <config_type> must be one of {','.join(PLURAL_ACCEPTABLE_TYPES)}")
+        click.echo(f"\nUsage: \n\tdoghouse list <config_type> must be one of {','.join(PLURAL_ACCEPTABLE_TYPES)}")
         return
-    if config_type == "monitors":
-        objs = DATADOG_CLIENT.get_monitors()
-    elif config_type == "dashboards":
-        objs = DATADOG_CLIENT.get_dashboards()
-    else:
+
+    objs = getattr(DATADOG_CLIENT, f'get_{config_type}')()
+    if not objs:
         return
-    click.echo(f"\nListing {config_type}: ")
+    click.echo(f"\n{DATADOG_OBJECTS[config_type].emoji} Listing {config_type}: ")
     for obj in objs:
         click.echo(f" - {obj.get('title', obj.get('name'))}")
 

@@ -1,8 +1,10 @@
+# -*- coding: UTF-8 -*-
 """
 Basic wrapper around datadog api
 """
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -10,8 +12,6 @@ import yaml
 from datadog import initialize, api
 
 from doghouse.exceptions import RequestForbiddenError
-
-MAX_RETRY = 10
 
 
 class DatadogClient:
@@ -92,3 +92,23 @@ class DatadogClient:
 
     def configure(self, api_key, app_key):
         self._create_config_file(api_key, app_key)
+
+
+@dataclass
+class Dashboard:
+    emoji: str = "📋"
+    name = 'dashboard'
+    key = 'dashboards'
+
+
+@dataclass
+class Monitor:
+    emoji: str = "⚠️"
+    name = 'monitor'
+    key = 'monitors'
+
+
+DATADOG_OBJECTS = {
+    Monitor.key: Monitor,
+    Dashboard.key: Dashboard
+}
