@@ -22,12 +22,14 @@ class DatadogClient:
     default_config_file = f"{home}/{config_dir}/{config_file}"
 
     def __init__(self):
-        config = self.__load_config()
+        config = self._load_config()
         if not config:
             config = self._create_config_file()
-        initialize(api_key=config["api_key"], app_key=config["app_key"])
+        self.api_key = config["api_key"]
+        self.app_key = config["app_key"]
+        initialize(api_key=self.api_key, app_key=self.app_key)
 
-    def __load_config(self) -> Optional[dict]:
+    def _load_config(self) -> Optional[dict]:
         config_file = self.default_config_file
         if not os.path.exists(config_file):
             return None
